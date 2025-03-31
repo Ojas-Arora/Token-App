@@ -26,6 +26,7 @@ export const TokenManager: FC = () => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [tokenMint, setTokenMint] = useState('');
+  const [mintKeypair, setMintKeypair] = useState<Keypair | null>(null);
   const [solBalance, setSolBalance] = useState<number>(0);
   const [tokenBalance, setTokenBalance] = useState<number>(0);
   const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
@@ -92,7 +93,7 @@ export const TokenManager: FC = () => {
       toast.info('Creating token...', { style: toastStyle });
       
       // Create new token mint
-      const mintKeypair = Keypair.generate();
+      const newMintKeypair = Keypair.generate();
       const lamports = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
       
       // Create transaction
@@ -102,7 +103,7 @@ export const TokenManager: FC = () => {
       transaction.add(
         SystemProgram.createAccount({
           fromPubkey: publicKey,
-          newAccountPubkey: mintKeypair.publicKey,
+          newAccountPubkey: newMintKeypair.publicKey,
           lamports,
           space: MINT_SIZE,
           programId: TOKEN_PROGRAM_ID,
@@ -112,7 +113,7 @@ export const TokenManager: FC = () => {
       // Add initialize mint instruction
       transaction.add(
         createInitializeMintInstruction(
-          mintKeypair.publicKey,
+          newMintKeypair.publicKey,
           Number(decimals),
           publicKey,
           publicKey,
@@ -125,15 +126,18 @@ export const TokenManager: FC = () => {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Sign transaction
+      // Sign transaction with both the wallet and mint keypair
       const signed = await signTransaction(transaction);
+      signed.partialSign(newMintKeypair);
+      
       const signature = await connection.sendRawTransaction(signed.serialize());
       
       // Wait for confirmation
       await connection.confirmTransaction(signature);
 
-      setTokenMint(mintKeypair.publicKey.toBase58());
-      toast.success(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`, { style: toastStyle });
+      setTokenMint(newMintKeypair.publicKey.toBase58());
+      setMintKeypair(newMintKeypair);
+      toast.success(`Token created successfully! Mint address: ${newMintKeypair.publicKey.toBase58()}`, { style: toastStyle });
     } catch (error) {
       console.error('Error creating token:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create token', { style: toastStyle });
@@ -143,7 +147,7 @@ export const TokenManager: FC = () => {
   };
 
   const handleMintTokens = async () => {
-    if (!publicKey || !signTransaction || !tokenMint) {
+    if (!publicKey || !signTransaction || !tokenMint || !mintKeypair) {
       toast.error('Please connect your wallet and create a token first', { style: toastStyle });
       return;
     }
@@ -195,7 +199,10 @@ export const TokenManager: FC = () => {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
+      // Sign with wallet first, then mint keypair
       const signed = await signTransaction(transaction);
+      signed.partialSign(mintKeypair);
+      
       const signature = await connection.sendRawTransaction(signed.serialize());
       await connection.confirmTransaction(signature);
 
