@@ -1,7 +1,7 @@
 import { FC, useState, ChangeEvent, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey, Transaction, Keypair, LAMPORTS_PER_SOL, TransactionInstruction } from '@solana/web3.js';
-import { getAssociatedTokenAddress, createMint, createAssociatedTokenAccount, TOKEN_PROGRAM_ID, getAccount } from '@solana/spl-token';
+import { Connection, PublicKey, Transaction, Keypair, LAMPORTS_PER_SOL, TransactionInstruction, SystemProgram } from '@solana/web3.js';
+import { getAssociatedTokenAddress, createMint, createAssociatedTokenAccount, TOKEN_PROGRAM_ID, getAccount, MINT_SIZE, createInitializeMintInstruction } from '@solana/spl-token';
 import {
   Box,
   Button,
@@ -40,7 +40,7 @@ export const TokenManager: FC = () => {
         }
       };
       fetchBalance();
-      const interval = setInterval(fetchBalance, 10000); // Update every 10 seconds
+      const interval = setInterval(fetchBalance, 10000);
       return () => clearInterval(interval);
     }
   }, [publicKey, connection]);
@@ -61,7 +61,7 @@ export const TokenManager: FC = () => {
         }
       };
       fetchTokenBalance();
-      const interval = setInterval(fetchTokenBalance, 10000); // Update every 10 seconds
+      const interval = setInterval(fetchTokenBalance, 10000);
       return () => clearInterval(interval);
     }
   }, [publicKey, tokenMint, connection, decimals]);
@@ -72,27 +72,61 @@ export const TokenManager: FC = () => {
       return;
     }
 
+    if (!tokenName || !tokenSymbol) {
+      toast.error('Please enter token name and symbol');
+      return;
+    }
+
     try {
       setLoading(true);
       toast.info('Creating token...');
       
       // Create new token mint
       const mintKeypair = Keypair.generate();
+      const lamports = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
       
-      // Create token with specified decimals
-      const mint = await createMint(
-        connection,
-        mintKeypair,
-        publicKey,
-        publicKey,
-        Number(decimals)
+      // Create transaction
+      const transaction = new Transaction();
+      
+      // Add system program instruction to create mint account
+      transaction.add(
+        SystemProgram.createAccount({
+          fromPubkey: publicKey,
+          newAccountPubkey: mintKeypair.publicKey,
+          lamports,
+          space: MINT_SIZE,
+          programId: TOKEN_PROGRAM_ID,
+        })
       );
 
-      setTokenMint(mint.toBase58());
-      toast.success(`Token created successfully! Mint address: ${mint.toBase58()}`);
+      // Add initialize mint instruction
+      transaction.add(
+        createInitializeMintInstruction(
+          mintKeypair.publicKey,
+          Number(decimals),
+          publicKey,
+          publicKey,
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      // Get latest blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      // Sign transaction
+      const signed = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signed.serialize());
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature);
+
+      setTokenMint(mintKeypair.publicKey.toBase58());
+      toast.success(`Token created successfully! Mint address: ${mintKeypair.publicKey.toBase58()}`);
     } catch (error) {
       console.error('Error creating token:', error);
-      toast.error('Failed to create token');
+      toast.error(error instanceof Error ? error.message : 'Failed to create token');
     } finally {
       setLoading(false);
     }
@@ -101,6 +135,11 @@ export const TokenManager: FC = () => {
   const handleMintTokens = async () => {
     if (!publicKey || !signTransaction || !tokenMint) {
       toast.error('Please connect your wallet and create a token first');
+      return;
+    }
+
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
 
@@ -120,19 +159,19 @@ export const TokenManager: FC = () => {
           connection,
           {
             publicKey: publicKey,
-            secretKey: new Uint8Array(64) // This is a hack since we don't have the actual signer
+            secretKey: new Uint8Array(64)
           },
           new PublicKey(tokenMint),
           publicKey
         );
       } catch (error) {
-        // Ignore error if account already exists
         if (error instanceof Error && !error.message.includes('already in use')) {
           throw error;
         }
       }
 
       // Create mint instruction
+      const mintAmount = BigInt(Number(amount) * Math.pow(10, Number(decimals)));
       const mintInstruction = new TransactionInstruction({
         keys: [
           { pubkey: new PublicKey(tokenMint), isSigner: true, isWritable: true },
@@ -159,7 +198,7 @@ export const TokenManager: FC = () => {
       toast.success(`Tokens minted successfully! Transaction: ${signature}`);
     } catch (error) {
       console.error('Error minting tokens:', error);
-      toast.error('Failed to mint tokens');
+      toast.error(error instanceof Error ? error.message : 'Failed to mint tokens');
     } finally {
       setLoading(false);
     }
@@ -218,6 +257,7 @@ export const TokenManager: FC = () => {
                 onChange={handleInputChange(setTokenName)}
                 fullWidth
                 variant="outlined"
+                required
               />
               
               <TextField
@@ -226,6 +266,7 @@ export const TokenManager: FC = () => {
                 onChange={handleInputChange(setTokenSymbol)}
                 fullWidth
                 variant="outlined"
+                required
               />
               
               <TextField
@@ -235,12 +276,13 @@ export const TokenManager: FC = () => {
                 onChange={handleInputChange(setDecimals)}
                 fullWidth
                 variant="outlined"
+                required
               />
               
               <Button
                 variant="contained"
                 onClick={handleCreateToken}
-                disabled={loading || !publicKey}
+                disabled={loading || !publicKey || !tokenName || !tokenSymbol}
                 sx={{ minWidth: 150 }}
               >
                 {loading ? <CircularProgress size={24} /> : 'Create Token'}
@@ -258,29 +300,24 @@ export const TokenManager: FC = () => {
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <TextField
-                label="Amount to Mint"
+                label="Amount"
                 type="number"
                 value={amount}
                 onChange={handleInputChange(setAmount)}
                 fullWidth
                 variant="outlined"
+                required
                 disabled={!tokenMint}
               />
               
               <Button
                 variant="contained"
                 onClick={handleMintTokens}
-                disabled={loading || !tokenMint || !publicKey}
+                disabled={loading || !publicKey || !tokenMint || !amount}
                 sx={{ minWidth: 150 }}
               >
                 {loading ? <CircularProgress size={24} /> : 'Mint Tokens'}
               </Button>
-              
-              {tokenMint && (
-                <Typography variant="body2" color="text.secondary" align="center">
-                  Token Mint Address: {tokenMint}
-                </Typography>
-              )}
             </Box>
           </Paper>
         </Grid>
