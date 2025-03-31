@@ -13,33 +13,36 @@ export const Navbar = () => {
     <AppBar 
       position="static" 
       sx={{ 
-        background: 'linear-gradient(45deg, #9945FF 30%, #14F195 90%)',
-        boxShadow: '0 3px 5px 2px rgba(153, 69, 255, .3)',
+        background: isDarkMode 
+          ? 'linear-gradient(45deg, #1a1a1a 30%, #2a2a2a 90%)'
+          : 'linear-gradient(45deg, #ffffff 30%, #f5f5f5 90%)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
       }}
     >
       <Toolbar>
-        <Typography 
-          variant={isMobile ? "h6" : "h5"} 
-          component="div" 
-          sx={{ 
+        <Typography
+          variant={isMobile ? "h6" : "h5"}
+          component="div"
+          sx={{
             flexGrow: 1,
-            fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #fff 30%, #e0e0e0 90%)',
+            fontWeight: 700,
+            background: 'linear-gradient(45deg, #9945FF 30%, #14F195 90%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
           }}
         >
           Solana Token Manager
         </Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton 
-            onClick={toggleTheme} 
-            color="inherit"
+          <IconButton
+            onClick={toggleTheme}
             sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                color: isDarkMode ? '#fff' : '#000',
               },
             }}
           >
@@ -49,15 +52,13 @@ export const Navbar = () => {
           <Box
             sx={{
               '& .wallet-adapter-button': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '8px 16px',
-                color: 'white',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
+                background: 'linear-gradient(45deg, #9945FF 30%, #14F195 90%)',
+                borderRadius: '8px',
+                padding: '8px 24px',
+                color: '#fff',
+                fontWeight: 600,
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  background: 'linear-gradient(45deg, #7a35d9 30%, #0fb880 90%)',
                 },
               },
             }}
