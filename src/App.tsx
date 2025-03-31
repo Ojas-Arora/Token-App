@@ -14,14 +14,14 @@ const AppContent: FC = () => {
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
       primary: {
-        main: '#9945FF',
-        light: '#B366FF',
-        dark: '#7A35D9',
+        main: '#00BCD4', // Cyan
+        light: '#4DD0E1',
+        dark: '#0097A7',
       },
       secondary: {
-        main: '#14F195',
-        light: '#4FF4B3',
-        dark: '#0FB880',
+        main: '#006064', // Dark Turquoise
+        light: '#00838F',
+        dark: '#004D40',
       },
       background: {
         default: isDarkMode ? '#121212' : '#f5f5f5',
@@ -74,9 +74,9 @@ const AppContent: FC = () => {
       MuiPaper: {
         styleOverrides: {
           root: {
-            backgroundImage: isDarkMode
-              ? 'linear-gradient(45deg, #1a1a1a 30%, #2a2a2a 90%)'
-              : 'linear-gradient(45deg, #ffffff 30%, #f5f5f5 90%)',
+            backgroundImage: isDarkMode 
+              ? 'linear-gradient(45deg, #1E1E1E 30%, #2A2A2A 90%)'
+              : 'linear-gradient(45deg, #FFFFFF 30%, #F5F5F5 90%)',
             backdropFilter: 'blur(10px)',
             border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
           },
@@ -95,9 +95,18 @@ const AppContent: FC = () => {
             },
           },
           contained: {
-            background: 'linear-gradient(45deg, #9945FF 30%, #14F195 90%)',
+            background: 'linear-gradient(45deg, #00BCD4 30%, #006064 90%)',
+            color: '#ffffff',
             '&:hover': {
-              background: 'linear-gradient(45deg, #7a35d9 30%, #0fb880 90%)',
+              background: 'linear-gradient(45deg, #0097A7 30%, #004D40 90%)',
+            },
+          },
+          outlined: {
+            borderColor: '#00BCD4',
+            color: '#00BCD4',
+            '&:hover': {
+              borderColor: '#006064',
+              color: '#006064',
             },
           },
         },
@@ -108,7 +117,7 @@ const AppContent: FC = () => {
             '& .MuiOutlinedInput-root': {
               borderRadius: 8,
               '&:hover fieldset': {
-                borderColor: isDarkMode ? '#9945FF' : '#14F195',
+                borderColor: '#00BCD4',
               },
             },
           },
@@ -118,7 +127,7 @@ const AppContent: FC = () => {
         styleOverrides: {
           root: {
             borderRadius: 16,
-            boxShadow: isDarkMode
+            boxShadow: isDarkMode 
               ? '0 4px 20px rgba(0, 0, 0, 0.3)'
               : '0 4px 20px rgba(0, 0, 0, 0.1)',
           },
@@ -130,34 +139,32 @@ const AppContent: FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #121212 0%, #1a1a1a 100%)'
-            : 'linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)',
-        }}
-      >
+      <Box sx={{ 
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, #121212 0%, #1E1E1E 100%)'
+          : 'linear-gradient(135deg, #F5F5F5 0%, #FFFFFF 100%)',
+      }}>
         <Navbar />
         <Container maxWidth="lg" sx={{ flex: 1, py: 4 }}>
           <TokenManager />
         </Container>
         <Footer />
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme={isDarkMode ? 'dark' : 'light'}
-        />
       </Box>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDarkMode ? 'dark' : 'light'}
+      />
     </ThemeProvider>
   );
 };
