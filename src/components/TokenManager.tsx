@@ -1,7 +1,7 @@
 import { FC, useState, ChangeEvent, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey, Transaction, Keypair, LAMPORTS_PER_SOL, TransactionInstruction, SystemProgram } from '@solana/web3.js';
-import { getAssociatedTokenAddress, createMint, createAssociatedTokenAccount, TOKEN_PROGRAM_ID, getAccount, MINT_SIZE, createInitializeMintInstruction } from '@solana/spl-token';
+import { Connection, PublicKey, Transaction, Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
+import { getAssociatedTokenAddress, createAssociatedTokenAccount, TOKEN_PROGRAM_ID, getAccount, MINT_SIZE, createInitializeMintInstruction, createMintToInstruction } from '@solana/spl-token';
 import {
   Box,
   Button,
@@ -172,18 +172,12 @@ export const TokenManager: FC = () => {
 
       // Create mint instruction
       const mintAmount = BigInt(Number(amount) * Math.pow(10, Number(decimals)));
-      const mintInstruction = new TransactionInstruction({
-        keys: [
-          { pubkey: new PublicKey(tokenMint), isSigner: true, isWritable: true },
-          { pubkey: associatedTokenAddress, isSigner: false, isWritable: true },
-          { pubkey: publicKey, isSigner: true, isWritable: false },
-        ],
-        programId: TOKEN_PROGRAM_ID,
-        data: Buffer.from([
-          9, // mintTo instruction
-          ...new Uint8Array(8).fill(0), // amount (8 bytes)
-        ]),
-      });
+      const mintInstruction = createMintToInstruction(
+        new PublicKey(tokenMint),
+        associatedTokenAddress,
+        publicKey,
+        mintAmount
+      );
 
       // Create and sign transaction
       const transaction = new Transaction().add(mintInstruction);
