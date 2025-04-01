@@ -1,48 +1,43 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   base: '/',
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
-    },
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          mui: ['@mui/material', '@mui/icons-material'],
-          solana: ['@solana/web3.js', '@solana/spl-token'],
-        },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      },
-    },
-  },
-  server: {
-    port: 3000,
-    host: true,
-  },
   resolve: {
     alias: {
       '@': '/src',
       buffer: 'buffer',
       stream: 'stream-browserify',
-      util: 'util',
+      crypto: 'crypto-browserify',
+      http: 'stream-http',
+      https: 'https-browserify',
+      os: 'os-browserify/browser',
+      url: 'url',
+      assert: 'assert',
+      util: 'util'
     }
   },
   define: {
     'process.env': {},
     global: 'globalThis',
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', '@solana/web3.js', '@solana/spl-token'],
+        }
+      },
+    },
+    target: 'esnext',
+    sourcemap: true,
   },
   optimizeDeps: {
     esbuildOptions: {
@@ -50,5 +45,9 @@ export default defineConfig({
         global: 'globalThis'
       }
     }
-  }
+  },
+  server: {
+    port: 3000,
+    host: true,
+  },
 })
