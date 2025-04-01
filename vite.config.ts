@@ -21,10 +21,14 @@ export default defineConfig({
     }
   },
   define: {
-    'process.env': {},
+    'process.env': {
+      NODE_ENV: JSON.stringify(process.env.NODE_ENV)
+    },
     global: 'globalThis',
     'window.Buffer': 'Buffer',
-    'window.process': 'process'
+    'window.process': 'process',
+    'process.version': JSON.stringify(''),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
   },
   build: {
     commonjsOptions: {

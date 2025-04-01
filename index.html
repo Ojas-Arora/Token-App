@@ -12,8 +12,10 @@
     <title>Solana Token Manager</title>
     <script>
       window.global = window;
+      window.process = window.process || {};
       window.Buffer = window.Buffer || require('buffer').Buffer;
-      window.process = window.process || require('process');
+      window.process.version = '';
+      window.process.env = { NODE_ENV: 'production' };
     </script>
   </head>
   <body>
