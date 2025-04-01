@@ -23,6 +23,8 @@ export default defineConfig({
   define: {
     'process.env': {},
     global: 'globalThis',
+    'window.Buffer': 'Buffer',
+    'window.process': 'process'
   },
   build: {
     commonjsOptions: {
